@@ -1,6 +1,12 @@
 import csv
 from bs4 import BeautifulSoup
 import expanddouban
+import codecs
+
+movie_list = []
+location_list = ["美国","英国","香港","大陆","台湾","日本","韩国","法国","德国","意大利","西班牙","印度","泰国","俄罗斯","伊朗","加拿大","澳大利亚","爱尔兰","瑞典","巴西","丹麦"]
+category_list = ["爱情","喜剧","科幻"]
+
 
 
 def getMovieUrl(category, location):
@@ -18,14 +24,6 @@ class Movie(object):
 		self.cover_link = cover_link
 
 
-"""
-return a list of Movie objects with the given category and location.
-	m = Movie(element.title,element.rate)
-
-"""
-movie_list = []
-
-
 def getMovies(category, location):
 	url = getMovieUrl(category, location)
 	html = expanddouban.getHtml(url)
@@ -38,45 +36,51 @@ def getMovies(category, location):
 		info_link = element.get("href")
 		m =  Movie(name,rate,location,category,info_link,cover_link)
 		movie_list.append(m)
-	# print(movie_list)
-	# print(content)
 
 def getMovieCSV():
+	for c in category_list:
+		for l in location_list:
+			getMovies(c,l)
+	with codecs.open('movies.csv', 'w', 'utf_8_sig') as csv_file:
+		 csv_app = csv.writer(csv_file)
+		 for m in movie_list:
+			 m_l = [m.name,m.rate,m.location,m.category,m.info_link,m.cover_link]
+			 csv_app.writerow(m_l)
 
-	getMovies("美国","剧情")
-	getMovies("香港","动作")
-	getMovies("英国","剧情")
-	with open("movies.csv","a") as csv_file:
-		csv_app = csv.writer(csv_file)
-		for m in movie_list:
-			m_l = [m.name,m.rate,m.location,m.category,m.info_link,m.cover_link]
-			csv_app.writerow(m_l)
+def sort_by_value(d):
+	return sorted(d.items(), key=lambda d: d[1])
 
+
+def getMovieDict(movie_category):
+	dict = {}
+	for l in location_list:
+		movie_l = []
+		for m in movie_category:
+			if m[2] == l:
+				movie_l.append(m)
+				dict[l] = round(len(movie_l) / len(movie_category) * 100, 2)
+	return dict
 def getMovieData():
 	getMovieCSV()
 	with open('movies.csv', 'r') as f:
 		csv_app = csv.reader(f)
 		movies = list(csv_app)
-		movie_story = []
-		movie_action = []
-		movie_story_a = []
-		movie_story_e = []
+		movie_love = []
+		movie_comedy = []
+		movie_fiction = []
 		for m in movies:
-			if m[2] == "剧情":
-				movie_story.append(m)
+			if m[3] == category_list[0]:
+				movie_love.append(m)
+			elif m[3] == category_list[1]:
+				movie_comedy.append(m)
 			else:
-				movie_action.append(m)
-		if len(movie_story) != 0:
-			for m in movie_story:
-				if m[3] == "美国":
-					movie_story_a.append(m)
-				else:
-					movie_story_e.append(m)
-		print("movie_story=====",len(movie_story),"movie_action======",len(movie_action),len(movie_story_a),len(movie_story_e))
-		# print(movies)
-	with open("output.txt", "a") as txt_file:
-		txt_file.write("种类为剧情的电影一共有{}个\n".format(len(movie_story)))
-		txt_file.write("在种类为剧情的电影里面，地区为美国的有{}个，占此类电影的百分比为{}，地区为英国的有{}个，占此类电影的百分比为{}\n".format(len(movie_story_a),len(movie_story_a)/len(movie_story),len(movie_story_e),len(movie_story_e)/len(movie_story),))
-		txt_file.write("种类为动作，地区为香港的电影一共有{}个\n".format(len(movie_action)))
+				movie_fiction.append(m)
+		dict_love = sort_by_value(getMovieDict(movie_love))
+		dict_comedy = sort_by_value(getMovieDict(movie_comedy))
+		dict_fiction = sort_by_value(getMovieDict(movie_fiction))
+	with open("output.txt", "w") as txt_file:
+		txt_file.write("爱情电影中，排名前三的地区是{}、{}、{},占此类别电影总数的百分比分别为:{}%,{}%,{}%\n".format(dict_love[-1][0],dict_love[-2][0],dict_love[-3][0],dict_love[-1][1],dict_love[-2][1],dict_love[-3][1]))
+		txt_file.write("喜剧电影中，排名前三的地区是{}、{}、{},占此类别电影总数的百分比分别为:{}%,{}%,{}%\n".format(dict_comedy[-1][0],dict_comedy[-2][0],dict_comedy[-3][0],dict_comedy[-1][1],dict_comedy[-2][1],dict_comedy[-3][1]))
+		txt_file.write("科幻电影中，排名前三的地区是{}、{}、{},占此类别电影总数的百分比分别为:{}%,{}%,{}%\n".format(dict_fiction[-1][0],dict_fiction[-2][0],dict_fiction[-3][0],dict_fiction[-1][1],dict_fiction[-2][1],dict_fiction[-3][1]))
 getMovieData()
 
