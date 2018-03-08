@@ -26,7 +26,7 @@ class Movie(object):
 
 def getMovies(category, location):
 	url = getMovieUrl(category, location)
-	html = expanddouban.getHtml(url)
+	html = expanddouban.getHtml(url,True)
 	soup = BeautifulSoup(html,'html.parser')
 	content = soup.find(id="content").find(class_="list-wp").find_all("a",class_="item")
 	for element in content:
